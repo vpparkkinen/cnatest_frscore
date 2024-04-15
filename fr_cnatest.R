@@ -43,7 +43,7 @@ rowdup <- function(data, times){
 set.seed(22)
 n_models <- 200
 n_factors <- 6
-noise_prop <- 0.25
+noise_prop <- 0.2
 #row_multip <- 1 # duplicate rows this many times
 #                # 1 = no duplication
 N <- 40
