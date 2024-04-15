@@ -28,22 +28,36 @@ flipout <- function(data, outcome, proportion){
   return(data)
 }
 
+any_submodel <- function(x,y){
+  if(is.null(x)) return(NA)
+  as <- lapply(x, function(z) bis_submodel(z,y))
+  as <- unlist(as)
+  if(length(as) == 1 && is.na(as)){
+    return(NA)
+  } else {
+    return(any(as))  
+  }
+  
+}
+
+
 bis_submodel <- function(x,y){
   if (is.na(x) || is.null(x)){
     NA
   } else {
-    is.submodel(x, y)
+    frscore:::fsubmodel_asf(x, y)
   }
 }
 
-rowdup <- function(data, times){
-  do.call(rbind, replicate(times, data, simplify = FALSE))
-}
+# rowdup <- function(data, times){
+#   do.call(rbind, replicate(times, data, simplify = FALSE))
+# }
 
 set.seed(22)
-n_models <- 200
+n_models <- 5
 n_factors <- 6
 noise_prop <- 0.2
+tquantile <- 0.95
 #row_multip <- 1 # duplicate rows this many times
 #                # 1 = no duplication
 N <- 40
@@ -79,8 +93,12 @@ frscore_results <- mcmapply(frscored_cna,
                             comp.method = "is.submodel",
                             SIMPLIFY = FALSE)
 
-top_frscore <- lapply(frscore_results, function(x) x[[1]][1,2])
-correctness <- mcmapply(bis_submodel,
+top_frscore <- lapply(
+  frscore_results, 
+  function(x) x[[1]][x[[1]]$score >= quantile(x[[1]]$score, tquantile) ,2]
+  )
+
+correctness <- mcmapply(any_submodel,
                         x = top_frscore,
                         y = targets,
                         SIMPLIFY = FALSE)
