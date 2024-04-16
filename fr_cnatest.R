@@ -1,6 +1,6 @@
 if(is.na(Sys.getenv("RSTUDIO", unset = NA))){
-  setwd(system2("pwd", stdout = TRUE)) # if not in RStudio, assume R runs in
-} else {                               # a shell. otherwise assume RStudio
+  setwd(system2("pwd", stdout = TRUE))
+} else {
   path <- rstudioapi::getActiveDocumentContext()$path
   Encoding(path) <- "UTF-8"
   setwd(dirname(path))
@@ -35,9 +35,9 @@ any_submodel <- function(x,y){
   if(length(as) == 1 && is.na(as)){
     return(NA)
   } else {
-    return(any(as))  
+    return(any(as))
   }
-  
+
 }
 
 
@@ -54,7 +54,7 @@ bis_submodel <- function(x,y){
 # }
 
 set.seed(22)
-n_models <- 5
+n_models <- 500
 n_factors <- 6
 noise_prop <- 0.2
 tquantile <- 0.95
@@ -94,7 +94,7 @@ frscore_results <- mcmapply(frscored_cna,
                             SIMPLIFY = FALSE)
 
 top_frscore <- lapply(
-  frscore_results, 
+  frscore_results,
   function(x) x[[1]][x[[1]]$score >= quantile(x[[1]]$score, tquantile) ,2]
   )
 
@@ -104,9 +104,11 @@ correctness <- mcmapply(any_submodel,
                         SIMPLIFY = FALSE)
 
 correctness <- unlist(correctness)
-cor_all_avg <- sum(correctness, na.rm = TRUE) / n_models
+all_cor <- sum(correctness, na.rm = TRUE)
+cor_all_avg <- all_cor / n_models
 
-sig_correctness <- sum(correctness[sig], na.rm = TRUE) / length(sig)
+sig_all_cor <- sum(correctness[sig], na.rm = TRUE)
+sig_correctness <- sig_all_cor / length(sig)
 
 cor_all_avg
 sig_correctness
