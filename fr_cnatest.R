@@ -54,8 +54,8 @@ bis_submodel <- function(x,y){
 # }
 
 set.seed(25)
-n_models <- 100
-n_factors <- 6
+n_models <- 1000
+n_factors <- 7
 noise_prop <- 0.2
 tquantile <- 1
 #row_multip <- 1 # duplicate rows this many times
@@ -73,10 +73,15 @@ outcomes <- lapply(targets, rhs)
 clean_dsets <- mclapply(targets,
                       function(x) cna::some(ct2df(selectCases(x)), N))
 
+for (i in seq_along(clean_dsets)) {
+  clean_dsets[[i]] <- cbind(clean_dsets[[i]],
+        data.frame(X = rbinom(nrow(clean_dsets[[i]]), 1, 0.5)))
+}
+
 if (rand_outcome){
   cat("!!! outcome selected at random from DGS non-outcomes !!!\n!!! is this what you want? !!!")
   outcomes <- mapply(\(x, y) {sample(names(x)[names(x) != y], 1)},
-                     x = clean_dsets, 
+                     x = clean_dsets,
                      y = outcomes,
                      SIMPLIFY = FALSE)
 }
