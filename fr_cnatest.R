@@ -1,4 +1,4 @@
-if(is.na(Sys.getenv("RSTUDIO", unset = NA))){
+if (is.na(Sys.getenv("RSTUDIO", unset = NA))) {
   setwd(system2("pwd", stdout = TRUE))
 } else {
   path <- rstudioapi::getActiveDocumentContext()$path
@@ -12,12 +12,12 @@ library(frscore)
 n_cores <- detectCores() - 2
 options(mc.cores = n_cores)
 
-flipout <- function(data, outcome, proportion){
+flipout <- function(data, outcome, proportion) {
   N <- nrow(data)
   out_col <- which(names(data) == outcome)
-  range_o <- min(data[,out_col]):max(data[,out_col])
-  n_to_flip <- round(N*proportion)
-  n_to_flip <- if(n_to_flip == 0L) 1L else n_to_flip
+  range_o <- min(data[, out_col]):max(data[, out_col])
+  n_to_flip <- round(N * proportion)
+  n_to_flip <- if (n_to_flip == 0L) 1L else n_to_flip
   w_rows <- sample(1:N, n_to_flip)
   for(row in w_rows){
     ov <- data[row, out_col]
@@ -28,7 +28,7 @@ flipout <- function(data, outcome, proportion){
   return(data)
 }
 
-any_submodel <- function(x,y){
+any_submodel <- function(x, y) {
   if(is.null(x)) return(NA)
   as <- lapply(x, function(z) bis_submodel(z,y))
   as <- unlist(as)
@@ -53,11 +53,11 @@ bis_submodel <- function(x,y){
 #   do.call(rbind, replicate(times, data, simplify = FALSE))
 # }
 
-set.seed(22)
-n_models <- 500
+set.seed(23)
+n_models <- 1000
 n_factors <- 6
 noise_prop <- 0.2
-tquantile <- 0.95
+tquantile <- 1
 #row_multip <- 1 # duplicate rows this many times
 #                # 1 = no duplication
 N <- 40
@@ -84,13 +84,14 @@ pvals_temp <- mcmapply(cnaTest,
 
 pvals <- unlist(lapply(pvals_temp, `[[`, 8))
 
-sig <- which(pvals < 0.05)
+sig <- which(pvals < 0.03)
 
 frscore_results <- mcmapply(frscored_cna,
                             x = noisy_dsets,
                             outcome = outcomes,
-                            output = "asf",
+                            MoreArgs = list(output = "asf",
                             comp.method = "is.submodel",
+                            fit.range = c(0.9, 0.6)),
                             SIMPLIFY = FALSE)
 
 top_frscore <- lapply(
@@ -113,3 +114,36 @@ sig_correctness <- sig_all_cor / length(sig)
 cor_all_avg
 sig_correctness
 length(sig)
+length(correctness)
+nresults <- lapply(top_frscore, function(x) length(x))
+mean(unlist(nresults))
+max(unlist(nresults))
+
+# average complexity of models when correct model among top results, both in all results, and in those for sig data sets
+correctness[is.na(correctness)] <- FALSE
+topf_vec <- unlist(top_frscore[correctness])
+sig_cor_idx <- correctness[sig]
+
+
+complx_allcor <- unlist(lapply(topf_vec, cna::getComplexity))
+sig_cor_complx <- unlist(lapply(topf_vec[sig_cor_idx], cna::getComplexity))
+
+mean(complx_allcor)
+mean(sig_cor_complx)
+
+# same for false results
+
+false_topf_vec <- unlist(top_frscore[!correctness])
+complx_allfalse <- unlist(lapply(false_topf_vec, cna::getComplexity))
+mean(complx_allfalse)
+
+sig_incor_idx <- !correctness[sig]
+incorrects <- unlist(top_frscore[!correctness[sig]])
+sig_incor_complx <- unlist(lapply(topf_vec[sig_incor_idx], cna::getComplexity))
+mean(sig_incor_complx)
+
+# complexity of models for significant vs insignificant data sets, regardless of correctness
+
+sig_results <- unlist(top_frscore[sig])
+mean(unlist(lapply(sig_results, cna::getComplexity)))
+mean(unlist(lapply(top_frscore[-sig], cna::getComplexity)))
