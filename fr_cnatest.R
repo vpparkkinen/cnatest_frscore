@@ -53,21 +53,33 @@ bis_submodel <- function(x,y){
 #   do.call(rbind, replicate(times, data, simplify = FALSE))
 # }
 
-set.seed(23)
-n_models <- 1000
+set.seed(25)
+n_models <- 100
 n_factors <- 6
 noise_prop <- 0.2
 tquantile <- 1
 #row_multip <- 1 # duplicate rows this many times
 #                # 1 = no duplication
 N <- 40
+rand_outcome <- TRUE
+
+
 
 targets <- replicate(n_models, randomAsf(n_factors), simplify = FALSE)
+
 outcomes <- lapply(targets, rhs)
+
 
 clean_dsets <- mclapply(targets,
                       function(x) cna::some(ct2df(selectCases(x)), N))
 
+if (rand_outcome){
+  cat("!!! outcome selected at random from DGS non-outcomes !!!\n!!! is this what you want? !!!")
+  outcomes <- mapply(\(x, y) {sample(names(x)[names(x) != y], 1)},
+                     x = clean_dsets, 
+                     y = outcomes,
+                     SIMPLIFY = FALSE)
+}
 
 
 
@@ -84,7 +96,7 @@ pvals_temp <- mcmapply(cnaTest,
 
 pvals <- unlist(lapply(pvals_temp, `[[`, 8))
 
-sig <- which(pvals < 0.03)
+sig <- which(pvals < 0.05)
 
 frscore_results <- mcmapply(frscored_cna,
                             x = noisy_dsets,
