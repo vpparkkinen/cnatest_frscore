@@ -45,7 +45,7 @@ bis_submodel <- function(x,y){
   if (is.na(x) || is.null(x)){
     NA
   } else {
-    frscore:::fsubmodel_asf(x, y)
+    is.submodel(x, y)
   }
 }
 
