@@ -7,59 +7,17 @@ if (is.na(Sys.getenv("RSTUDIO", unset = NA))) {
 }
 
 source("cnaTest.R")
+source("helper_funcs.R")
 library(doParallel)
 library(frscore)
 n_cores <- detectCores() - 2
 options(mc.cores = n_cores)
-
-flipout <- function(data, outcome, proportion) {
-  N <- nrow(data)
-  out_col <- which(names(data) == outcome)
-  range_o <- min(data[, out_col]):max(data[, out_col])
-  n_to_flip <- round(N * proportion)
-  n_to_flip <- if (n_to_flip == 0L) 1L else n_to_flip
-  w_rows <- sample(1:N, n_to_flip)
-  for(row in w_rows){
-    ov <- data[row, out_col]
-    not_ov <- range_o[range_o != ov]
-    change_ov_to <- sample(not_ov, 1)
-    data[row, out_col] <- change_ov_to
-  }
-  return(data)
-}
-
-any_submodel <- function(x, y) {
-  if(is.null(x)) return(NA)
-  as <- lapply(x, function(z) bis_submodel(z,y))
-  as <- unlist(as)
-  if(length(as) == 1 && is.na(as)){
-    return(NA)
-  } else {
-    return(any(as))
-  }
-
-}
-
-
-bis_submodel <- function(x,y){
-  if (is.na(x) || is.null(x)){
-    NA
-  } else {
-    is.submodel(x, y)
-  }
-}
-
-# rowdup <- function(data, times){
-#   do.call(rbind, replicate(times, data, simplify = FALSE))
-# }
 
 set.seed(25)
 n_models <- 1000
 n_factors <- 7
 noise_prop <- 0.2
 tquantile <- 1
-#row_multip <- 1 # duplicate rows this many times
-#                # 1 = no duplication
 N <- 40
 rand_outcome <- TRUE
 
@@ -91,7 +49,7 @@ if (rand_outcome){
 noisy_dsets <- mcmapply(flipout,
                       data = clean_dsets,
                       outcome = outcomes,
-                      proportion = noise_prop,
+                      MoreArgs = list(proportion = noise_prop),
                       SIMPLIFY = FALSE)
 
 pvals_temp <- mcmapply(cnaTest,
