@@ -64,18 +64,27 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
   n_noise <- round(noiselevel * N)
   cdat <- ct2df(selectCases(model, full.ct(data)))
   
-  ndat <- setdiff(ct2df(full.ct(data)), data)
+  ndat <- setdiff(ct2df(full.ct(data)), cdat)
   ndatsplit <- split(ndat, ndat[,outcome])
   datasplit <- split(data, data[,outcome])
   data_ps <- lapply(datasplit, function(x) round((nrow(x) / N) * n_noise))
-  temp_cdata <- mapply(\(x,y){x[-sample(1:nrow(x), y),]}, 
-                datasplit, 
-                data_ps,
-                SIMPLIFY = FALSE)
-  temp_ndata <- mapply(\(x,y){x[sample(1:nrow(x), y),]}, 
-                       ndatsplit, 
-                       data_ps,
-                       SIMPLIFY = FALSE)
+  if(sum(unlist(data_ps)) == 0L){
+    idx <- sample(1:length(datasplit),1)
+    tc <- datasplit[[idx]][-sample(1:nrow(datasplit[[idx]]),1), ]
+    tn <- ndatsplit[[idx]][sample(1:nrow(ndatsplit[[idx]]),1), ]
+    temp_cdata <- datasplit
+    temp_cdata[[idx]] <- rbind(tc,tn) 
+  } else {
+    temp_cdata <- mapply(\(x,y){if (y == 0L) x else x[-sample(1:nrow(x), y),]}, 
+                         datasplit, 
+                         data_ps,
+                         SIMPLIFY = FALSE)
+    temp_ndata <- mapply(\(x,y){if (y == 0L) x[0L,] else x[sample(1:nrow(x), y),]}, 
+                         ndatsplit, 
+                         data_ps,
+                         SIMPLIFY = FALSE)  
+  }
+  
   ndata_all <- do.call(rbind, temp_ndata)
   cdata_all <- do.call(rbind, temp_cdata)
   out <- rbind(cdata_all, ndata_all)
