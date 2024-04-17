@@ -72,8 +72,9 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
     idx <- sample(1:length(datasplit),1)
     tc <- datasplit[[idx]][-sample(1:nrow(datasplit[[idx]]),1), ]
     tn <- ndatsplit[[idx]][sample(1:nrow(ndatsplit[[idx]]),1), ]
+    temp_ndata <- tn
     temp_cdata <- datasplit
-    temp_cdata[[idx]] <- rbind(tc,tn) 
+    temp_cdata[[idx]] <- tc
   } else {
     temp_cdata <- mapply(\(x,y){if (y == 0L) x else x[-sample(1:nrow(x), y),]}, 
                          datasplit, 
@@ -85,7 +86,9 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
                          SIMPLIFY = FALSE)  
   }
   
-  ndata_all <- do.call(rbind, temp_ndata)
+  ndata_all <- if(class(temp_ndata) == "data.frame") {
+    temp_ndata
+    } else {do.call(rbind, temp_ndata)}
   cdata_all <- do.call(rbind, temp_cdata)
   out <- rbind(cdata_all, ndata_all)
   attr(out, "noise") <- ndata_all
