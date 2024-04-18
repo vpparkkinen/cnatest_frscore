@@ -97,11 +97,18 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
 
 prevalence_fixer <- function(data, outcome, prevalence, N){
   if((prevalence * N) %% 1 != 0L) warning("prevalence is not a fraction of N")
-  if(class(substitute(outcome, parent.frame())) == "call"){o <- outcome} else{
-    o <- substitute(outcome)  
+  # if(class(substitute(outcome, parent.frame())) == "call"){o <- outcome} else{
+  #   o <- substitute(outcome)  
+  # }
+  # 
+  # o_idx <- eval(o, data, parent.frame())
+  stopifnot(is.list(outcome) || is.character(outcome))
+  if (is.list(outcome)){
+    o_idx <- data[,names(outcome)[[1]]] == outcome[[1]]  
+  } else {
+    o_idx <- data[,outcome] == 1
   }
   
-  o_idx <- eval(o, data, parent.frame())
   o_present <- data[o_idx,]
   opnr <- nrow(o_present)
   if (nrow(data) == N && prevalence == opnr / N){
@@ -128,16 +135,28 @@ prevalence_fixer <- function(data, outcome, prevalence, N){
 }
 
 
-makenoisy_asf <- function(model, 
+makenoisy_asf <- function(model = randomAsf(6), 
                         data = ct2df(selectCases(model)), 
-                        outcome, 
-                        prevalence, 
-                        noiselevel,
+                        outcome = setNames(list(1), rhs(model)), 
+                        prevalence = 0.5, 
+                        noiselevel = 2/N,
                         N = nrow(data)){
-  oc_temp <- substitute(outcome)
-  oc <- deparse(oc_temp)
-  oc <- gsub(" ", "", strsplit(oc, "==")[[1]][1])
-  prev_dat <- prevalence_fixer(data, oc_temp, prevalence, N)
+  # oc_temp <- substitute(outcome)
+  # oc <- deparse(oc_temp)
+  # oc <- gsub(" ", "", strsplit(oc, "==")[[1]][1])
+  stopifnot(is.list(outcome) || is.character(outcome))
+  if(is.list(outcome)) {oc <- names(outcome)[[1]]} else {
+    oc <- outcome
+    outcome <- setNames(list(1), outcome)
+    }
+  prev_dat <- prevalence_fixer(data, outcome, prevalence, N)
   out <- prevalence_compliant_noisify(model, prev_dat, oc, noiselevel)
+  info <- data.frame(model = model,
+                     outcome = paste0(oc, "=", outcome[[1]]),
+                     prevalence = prevalence,
+                     noiselevel = noiselevel,
+                     N = N)
+  attr(out, "makenoisy_asf.info") <- info
+  attr(out, "makenoisy input data") <- data
   return(out)
 }
