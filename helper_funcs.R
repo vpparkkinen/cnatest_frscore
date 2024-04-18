@@ -58,13 +58,10 @@ bs_dat_create <- function(Nsets = 1e3,
 
 prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
   if((noiselevel * nrow(data)) %% 1 != 0L) warning("noiselevel is not a fraction of N")
-  #o <- substitute(outcome)
   N <- nrow(data)
-  #o_levs <- min(data[,outcome]):max(data[,outcome])
   n_noise <- round(noiselevel * N)
   cdat <- ct2df(selectCases(model, full.ct(data)))
-  
-  ndat <- setdiff(ct2df(full.ct(data)), cdat)
+  ndat <- data.frame(setdiff(ct2df(full.ct(data)), cdat))
   ndatsplit <- split(ndat, ndat[,outcome])
   datasplit <- split(data, data[,outcome])
   data_ps <- lapply(datasplit, function(x) round((nrow(x) / N) * n_noise))
@@ -100,8 +97,11 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
 
 prevalence_fixer <- function(data, outcome, prevalence, N){
   if((prevalence * N) %% 1 != 0L) warning("prevalence is not a fraction of N")
-  o <- substitute(outcome, parent.frame())
-  o_idx <- eval(o, data)
+  if(class(substitute(outcome, parent.frame())) == "call"){o <- outcome} else{
+    o <- substitute(outcome)  
+  }
+  
+  o_idx <- eval(o, data, parent.frame())
   o_present <- data[o_idx,]
   opnr <- nrow(o_present)
   if (nrow(data) == N && prevalence == opnr / N){
@@ -136,7 +136,7 @@ makenoisy_asf <- function(model,
                         N = nrow(data)){
   oc_temp <- substitute(outcome)
   oc <- deparse(oc_temp)
-  oc <- strsplit(oc,"")[[1]][1]
+  oc <- gsub(" ", "", strsplit(oc, "==")[[1]][1])
   prev_dat <- prevalence_fixer(data, oc_temp, prevalence, N)
   out <- prevalence_compliant_noisify(model, prev_dat, oc, noiselevel)
   return(out)
