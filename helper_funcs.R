@@ -157,6 +157,6 @@ makenoisy_asf <- function(model = randomAsf(6),
                      noiselevel = noiselevel,
                      N = N)
   attr(out, "makenoisy_asf.info") <- info
-  attr(out, "makenoisy input data") <- data
+  attr(out, "makenoisy_asf input data") <- data
   return(out)
 }
