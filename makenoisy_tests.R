@@ -9,7 +9,7 @@ if (is.na(Sys.getenv("RSTUDIO", unset = NA))) {
 library(cna)
 source("helper_funcs.R")
 
-g <- expand.grid(seq(0.3,0.8,by=0.1),seq(0.05,0.8,by=0.1), 8:20)
+g <- expand.grid(seq(0.3,0.8,by=0.1),seq(0.05,0.8,by=0.05), 8:20)
 
 #ndats <- replicate(100, makenoisy_asf(prevalence = 0.2, noiselevel = .05, N=30))
 ndats <- mapply(makenoisy_asf, 
@@ -26,6 +26,13 @@ diffs_noise <- mapply(dplyr::setdiff, noiserows, input_dat, SIMPLIFY = FALSE)
 allg <- mapply(dplyr::setequal, noiserows, diffs_noise)
 all(allg)
 
+# double check
+models <- lapply(ndats, function(x) attributes(x)$makenoisy_asf.info$model)
+cdat <- lapply(models, function(x) ct2df(selectCases(x))) 
+diff_cdat_ndat <- mapply(dplyr::setdiff, x = ndats, y = cdat) 
+all_gd <- mapply(dplyr::setequal, diff_cdat_ndat, noiserows)
+all(all_gd)
+
 prevs <- lapply(ndats, function(x) attributes(x)$makenoisy_asf.info$prevalence)
 outs <- lapply(ndats, 
                \(x) gsub("=1","", attributes(x)$makenoisy_asf.info$outcome))
@@ -40,6 +47,6 @@ r_prev - g[,1]
 r_noiseprop <- mapply(\(x,y) nrow(x) / nrow(y), x = noiserows, y = ndats)
 r_noiseprop - g[,2]
 
-
-
+rrnoise_prop <- mapply(\(x, y) nrow(x) / nrow(y), diff_cdat_ndat, ndats)
+rrnoise_prop - g[,2]
 
