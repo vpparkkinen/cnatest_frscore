@@ -99,9 +99,7 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
 
 
 prevalence_fixer <- function(data, outcome, prevalence, N){
-  #frac <- MASS::fractions(prevalence)
   if((prevalence * N) %% 1 != 0L) warning("prevalence is not a fraction of N")
-  #if(noise * N %% 1 != 0L) warning("noise is not a fraction of N")
   o <- substitute(outcome, parent.frame())
   o_idx <- eval(o, data)
   o_present <- data[o_idx,]
@@ -111,7 +109,7 @@ prevalence_fixer <- function(data, outcome, prevalence, N){
   }
   o_absent <- data[!o_idx,]
   oanr <- nrow(o_absent)
-  n_preval_rows <- round(N*prevalence)
+  n_preval_rows <- round(N * prevalence)
   n_nonpreval_rows <- N - n_preval_rows
   if (opnr > n_preval_rows){
     prev_out <- o_present[sample(1:opnr, n_preval_rows),]
