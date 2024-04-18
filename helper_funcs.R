@@ -80,7 +80,9 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
                          datasplit, 
                          data_ps,
                          SIMPLIFY = FALSE)
-    temp_ndata <- mapply(\(x,y){if (y == 0L) x[0L,] else x[sample(1:nrow(x), y),]}, 
+    temp_ndata <- mapply(\(x,y){
+      if (y == 0L) {x[0L,]} else {x[sample(1:nrow(x), y, replace = TRUE),]}
+      }, 
                          ndatsplit, 
                          data_ps,
                          SIMPLIFY = FALSE)  
