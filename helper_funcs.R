@@ -100,7 +100,7 @@ prevalence_fixer <- function(data, outcome, prevalence, N){
   #frac <- MASS::fractions(prevalence)
   if((prevalence * N) %% 1 != 0L) warning("prevalence is not a fraction of N")
   #if(noise * N %% 1 != 0L) warning("noise is not a fraction of N")
-  o <- substitute(outcome)
+  o <- substitute(outcome, parent.frame())
   o_idx <- eval(o, data)
   o_present <- data[o_idx,]
   opnr <- nrow(o_present)
@@ -128,3 +128,16 @@ prevalence_fixer <- function(data, outcome, prevalence, N){
 }
 
 
+makenoisy_asf <- function(model, 
+                        data = ct2df(selectCases(model)), 
+                        outcome, 
+                        prevalence, 
+                        noiselevel,
+                        N = nrow(data)){
+  oc_temp <- substitute(outcome)
+  oc <- deparse(oc_temp)
+  oc <- strsplit(oc,"")[[1]][1]
+  prev_dat <- prevalence_fixer(data, oc_temp, prevalence, N)
+  out <- prevalence_compliant_noisify(model, prev_dat, oc, noiselevel)
+  return(out)
+}
