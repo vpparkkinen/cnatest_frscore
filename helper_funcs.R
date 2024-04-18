@@ -61,7 +61,7 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
   N <- nrow(data)
   n_noise <- round(noiselevel * N)
   cdat <- ct2df(selectCases(model, full.ct(data)))
-  ndat <- data.frame(setdiff(ct2df(full.ct(data)), cdat))
+  ndat <- data.frame(dplyr::setdiff(ct2df(full.ct(data)), cdat))
   ndatsplit <- split(ndat, ndat[,outcome])
   datasplit <- split(data, data[,outcome])
   data_ps <- lapply(datasplit, function(x) round((nrow(x) / N) * n_noise))
@@ -157,6 +157,6 @@ makenoisy_asf <- function(model = randomAsf(6),
                      noiselevel = noiselevel,
                      N = N)
   attr(out, "makenoisy_asf.info") <- info
-  attr(out, "makenoisy_asf input data") <- data
+  attr(out, "makenoisy_asf.input.data") <- data
   return(out)
 }
