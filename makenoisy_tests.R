@@ -17,9 +17,29 @@ ndats <- mapply(makenoisy_asf,
                 noiselevel = g[,2], 
                 N = g[,3], 
                 SIMPLIFY = FALSE)
+
+# are the noise rows really noise?
+
 noiserows <- lapply(ndats, function(x) attributes(x)$noise)
 input_dat <- lapply(ndats, function(x) attributes(x)$makenoisy_asf.input.data)
 diffs_noise <- mapply(dplyr::setdiff, noiserows, input_dat, SIMPLIFY = FALSE)
 allg <- mapply(dplyr::setequal, noiserows, diffs_noise)
 all(allg)
+
+prevs <- lapply(ndats, function(x) attributes(x)$makenoisy_asf.info$prevalence)
+outs <- lapply(ndats, 
+               \(x) gsub("=1","", attributes(x)$makenoisy_asf.info$outcome))
+
+# are prevalences (nearly) what they should be?
+
+r_prev <- mapply(\(x,y) mean(x[,y]), x = ndats, y = outs)
+r_prev - g[,1]
+
+# are noise levels what they should be?
+
+r_noiseprop <- mapply(\(x,y) nrow(x) / nrow(y), x = noiserows, y = ndats)
+r_noiseprop - g[,2]
+
+
+
 
