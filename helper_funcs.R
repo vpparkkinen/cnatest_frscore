@@ -58,6 +58,7 @@ bs_dat_create <- function(Nsets = 1e3,
 
 prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
   if((noiselevel * nrow(data)) %% 1 != 0L) warning("noiselevel is not a fraction of N")
+  if(noiselevel == 0L) {return(data)}
   N <- nrow(data)
   n_noise <- round(noiselevel * N)
   cdat <- ct2df(selectCases(model, full.ct(data)))
