@@ -64,6 +64,7 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
   ndat <- data.frame(dplyr::setdiff(ct2df(full.ct(data)), cdat))
   ndatsplit <- split(ndat, ndat[,outcome])
   datasplit <- split(data, data[,outcome])
+  ndatsplit <- ndatsplit[which(names(ndatsplit) == names(datasplit))]
   data_ps <- lapply(datasplit, function(x) round((nrow(x) / N) * n_noise))
   if(sum(unlist(data_ps)) == 0L){
     idx <- sample(1:length(datasplit),1)
@@ -73,7 +74,8 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
     temp_cdata <- datasplit
     temp_cdata[[idx]] <- tc
   } else {
-    temp_cdata <- mapply(\(x,y){if (y == 0L) x else x[-sample(1:nrow(x), y),]}, 
+    temp_cdata <- mapply(
+      \(x,y){if (y == 0L || nrow(x) == 0L) x else x[-sample(1:nrow(x), y),]}, 
                          datasplit, 
                          data_ps,
                          SIMPLIFY = FALSE)
@@ -85,10 +87,15 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
                          SIMPLIFY = FALSE)  
   }
   
+
   ndata_all <- if(class(temp_ndata) == "data.frame") {
     temp_ndata
     } else {do.call(rbind, temp_ndata)}
-  cdata_all <- do.call(rbind, temp_cdata)
+  cdata_all <- if(class(temp_cdata) == "data.frame") {
+    temp_cdata
+    } else {
+      do.call(rbind, temp_cdata)
+      }
   out <- rbind(cdata_all, ndata_all)
   attr(out, "noise") <- ndata_all
   return(out)
@@ -96,7 +103,7 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
 
 
 prevalence_fixer <- function(data, outcome, prevalence, N){
-  if((prevalence * N) %% 1 != 0L) warning("prevalence is not a fraction of N")
+  if((prevalence * N) %% 1 != 0L) warning("`prevalence` is not a fraction of `N`")
   # if(class(substitute(outcome, parent.frame())) == "call"){o <- outcome} else{
   #   o <- substitute(outcome)  
   # }
