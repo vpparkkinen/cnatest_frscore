@@ -13,16 +13,42 @@ n_cores <- detectCores() - 2
 options(mc.cores = n_cores)
 
 # set up test
-g <- expand.grid(seq(0.05, 0.9, by = 0.05),
-                 seq(0.05, 0.9, by = 0.05),
-                 8:128)
+mv <- FALSE # are we testing mv data/models?
 
+g <- expand.grid(seq(0.05, 0.9, by = 0.15), # prevalence
+                 seq(0.05, 0.9, by = 0.15), # noiselevel
+                 8:12) # N
 
-ndats <- mcmapply(makenoisy_asf,
-                  prevalence = g[, 1],
-                  noiselevel = g[, 2],
-                  N = g[, 3],
-                  SIMPLIFY = FALSE)
+if (mv) {
+  reference_data <- setNames(replicate(6, 1:4, simplify = FALSE), LETTERS[1:6])
+  reference_data <- data.frame(reference_data)
+  models <- mclapply(1:nrow(g), \(...) randomAsf(reference_data))
+  outcomes <- mclapply(models, rhs)
+  mvo_tolist <- \(x) {
+    u <- unlist(strsplit(x, "="))
+    setNames(list(as.integer(u[2])), u[1])
+  }
+  outcomes <- mclapply(outcomes, mvo_tolist)
+  dats <- mclapply(models, \(x) ct2df(selectCases(x, full.ct(reference_data))))
+  ndats <- mapply(makenoisy_asf,
+                    model = models,
+                    data = dats,
+                    outcome = outcomes,
+                    prevalence = g[, 1],
+                    noiselevel = g[, 2],
+                    N = g[, 3],
+                    SIMPLIFY = FALSE)
+  
+} else {
+  makenoisy_asf(data = dats[[1]], model = models[[1]], outcome = outcomes[[1]], prevalence = g[1,1], noiselevel = g[1,2], N = g[1,3])
+  
+  ndats <- mcmapply(makenoisy_asf,
+                    prevalence = g[, 1],
+                    noiselevel = g[, 2],
+                    N = g[, 3],
+                    SIMPLIFY = FALSE)
+}
+
 
 # are the noise rows really noise?
 noiserows <- lapply(ndats, function(x) attributes(x)$noise)

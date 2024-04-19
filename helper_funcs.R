@@ -61,11 +61,21 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
   if(noiselevel == 0L) {return(data)}
   N <- nrow(data)
   n_noise <- round(noiselevel * N)
-  cdat <- ct2df(selectCases(model, full.ct(data)))
-  ndat <- data.frame(dplyr::setdiff(ct2df(full.ct(data)), cdat))
+  if(grepl("=", model)) {
+    mm <- c(as.matrix(ct2df(full.ct(model))), as.matrix(data))
+    mif <- min(mm)
+    maf <- max(mm)
+    dummydat <- replicate(length(data), mif:maf, simplify = FALSE)
+    dummydat <- data.frame(setNames(dummydat, names(data)))
+    dummydat <- ct2df(full.ct(dummydat))
+  } else {
+    dummydat <- full.ct(data)
+  }
+  cdat <- ct2df(selectCases(model, dummydat))
+  ndat <- data.frame(dplyr::setdiff(ct2df(dummydat), cdat))
   ndatsplit <- split(ndat, ndat[,outcome])
   datasplit <- split(data, data[,outcome])
-  ndatsplit <- ndatsplit[which(names(ndatsplit) == names(datasplit))]
+  ndatsplit <- ndatsplit[which(names(ndatsplit) %in% names(datasplit))]
   #mod <- n_noise %% length(datasplit)
   data_ps <- lapply(datasplit, function(x) round((nrow(x) / N) * n_noise))
   nn_dps_diff <- n_noise - sum(unlist(data_ps))
@@ -166,7 +176,9 @@ makenoisy_asf <- function(model = randomAsf(6),
   # oc <- deparse(oc_temp)
   # oc <- gsub(" ", "", strsplit(oc, "==")[[1]][1])
   stopifnot(is.list(outcome) || is.character(outcome))
-  if(is.list(outcome)) {oc <- names(outcome)[[1]]} else {
+  if(is.list(outcome)) {
+    oc <- names(outcome)[[1]]
+    } else {
     oc <- outcome
     outcome <- setNames(list(1), outcome)
     }
