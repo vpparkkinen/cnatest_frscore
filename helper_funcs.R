@@ -65,7 +65,20 @@ prevalence_compliant_noisify <- function(model, data, outcome, noiselevel){
   ndatsplit <- split(ndat, ndat[,outcome])
   datasplit <- split(data, data[,outcome])
   ndatsplit <- ndatsplit[which(names(ndatsplit) == names(datasplit))]
+  #mod <- n_noise %% length(datasplit)
   data_ps <- lapply(datasplit, function(x) round((nrow(x) / N) * n_noise))
+  nn_dps_diff <- n_noise - sum(unlist(data_ps))
+  
+  if(nn_dps_diff != 0L){
+    tocorrect_pss_idxs <- sample(1:length(data_ps), 
+                                 abs(nn_dps_diff),
+                                 prob = sapply(datasplit, nrow))
+    for (i in tocorrect_pss_idxs){
+      data_ps[[i]] <- data_ps[[i]] + nn_dps_diff / abs(nn_dps_diff)
+    }
+  }
+  
+  
   if(sum(unlist(data_ps)) == 0L){
     idx <- sample(1:length(datasplit),1)
     tc <- datasplit[[idx]][-sample(1:nrow(datasplit[[idx]]),1), ]
